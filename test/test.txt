@@ -12,20 +12,14 @@ uint8_t GPStxbuffer[serial_buffer_size];    //Extra serial tx buffer
 uint8_t RVCrxbuffer[serial_buffer_size];    //Extra serial rx buffer
 uint8_t RVCtxbuffer[serial_buffer_size];    //Extra serial tx buffer
 
-#define EventOUT 23 //Trigger UM982 event
+//#define EventOUT 23 //Trigger UM982 event
 
 Adafruit_BNO08x_RVC rvc = Adafruit_BNO08x_RVC();
 
-bool gotCR = false;
-bool gotLF = false;
-bool gotDollar = false;
-char msgBuf[254];
-int msgBufLen = 0;
-
 void setup() {
   delay(500);                         //Small delay so serial can monitor start up
-  pinMode(EventOUT, OUTPUT);
-  digitalWrite(EventOUT, LOW);
+  //pinMode(EventOUT, OUTPUT);
+  //digitalWrite(EventOUT, LOW);
 
   delay(10);
   Serial.begin(baudAOG);
@@ -36,7 +30,7 @@ void setup() {
   SerialGPS->addMemoryForRead(GPSrxbuffer, serial_buffer_size);
   SerialGPS->addMemoryForWrite(GPStxbuffer, serial_buffer_size);
 
-  SerialRVC->begin(baudAOG);
+  SerialRVC->begin(baudGPS);
   SerialRVC->addMemoryForRead(RVCrxbuffer, serial_buffer_size);
   SerialRVC->addMemoryForWrite(RVCtxbuffer, serial_buffer_size);
 
@@ -71,56 +65,10 @@ void loop() {
   // Serial.println(" :End Micros");
   // Serial.println("--End Record--");
   // Serial.println();
-
-  if ( rvc.read(&rvcData) )
+  if ( !rvc.read(&rvcData) )
   {
-    delay(100);
-    Serial.println( millis() );
-    digitalWrite(EventOUT, HIGH); // Send begining of pulse to UM982. Triggers on rising edge.
-    digitalWrite(EventOUT, LOW); //End of UM982 event pulse.
+    return;
   }
+  Serial.println( millis() );
 
-  while (SerialGPS->available())
-  {
-    char incoming = SerialGPS->read();
-    //UMparser << incoming;
-    //Serial.println(incoming);
-    switch (incoming) 
-    {
-        case '#':
-        msgBuf[msgBufLen] = incoming;
-        msgBufLen ++;
-        gotDollar = true;
-        break;
-        case '\r':
-        msgBuf[msgBufLen] = incoming;
-        msgBufLen ++;
-        gotCR = true;
-        gotDollar = false;
-        break;
-        case '\n':
-        msgBuf[msgBufLen] = incoming;
-        msgBufLen ++;
-        gotLF = true;
-        gotDollar = false;
-        break;
-        default:
-        if (gotDollar)
-            {
-            msgBuf[msgBufLen] = incoming;
-            msgBufLen ++;
-            }
-        break;
-    }
-
-    if (gotCR && gotLF)
-    {
-      Serial.print(msgBuf);
-      gotCR = false;
-      gotLF = false;
-      gotDollar = false;
-      memset( msgBuf, 0, 254 );
-      msgBufLen = 0;
-    }
-  }
 }
