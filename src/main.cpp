@@ -12,7 +12,7 @@ uint8_t GPStxbuffer[serial_buffer_size];    //Extra serial tx buffer
 uint8_t RVCrxbuffer[serial_buffer_size];    //Extra serial rx buffer
 uint8_t RVCtxbuffer[serial_buffer_size];    //Extra serial tx buffer
 
-#define EventOUT 23 //Trigger UM982 event
+#define EventOUT 33 //Trigger UM982 event
 
 Adafruit_BNO08x_RVC rvc = Adafruit_BNO08x_RVC();
 
@@ -21,6 +21,9 @@ bool gotLF = false;
 bool gotDollar = false;
 char msgBuf[254];
 int msgBufLen = 0;
+
+bool resRVC;
+double rvcCount = 0;
 
 void setup() {
   delay(500);                         //Small delay so serial can monitor start up
@@ -74,11 +77,13 @@ void loop() {
 
   if ( rvc.read(&rvcData) )
   {
-    delay(100);
-    Serial.println( millis() );
+    //delay(100);
     digitalWrite(EventOUT, HIGH); // Send begining of pulse to UM982. Triggers on rising edge.
     digitalWrite(EventOUT, LOW); //End of UM982 event pulse.
+    //Serial.println(rvcCount);
+    rvcCount = 0;
   }
+  rvcCount ++;
 
   while (SerialGPS->available())
   {
@@ -93,14 +98,14 @@ void loop() {
         gotDollar = true;
         break;
         case '\r':
-        msgBuf[msgBufLen] = incoming;
-        msgBufLen ++;
+        //msgBuf[msgBufLen] = incoming;
+        //msgBufLen ++;
         gotCR = true;
         gotDollar = false;
         break;
         case '\n':
-        msgBuf[msgBufLen] = incoming;
-        msgBufLen ++;
+        //msgBuf[msgBufLen] = incoming;
+        //msgBufLen ++;
         gotLF = true;
         gotDollar = false;
         break;
@@ -116,6 +121,9 @@ void loop() {
     if (gotCR && gotLF)
     {
       Serial.print(msgBuf);
+      Serial.print(","); Serial.print(rvcData.yaw);
+      Serial.print(","); Serial.print(rvcData.pitch);
+      Serial.print(","); Serial.println(rvcData.roll);
       gotCR = false;
       gotLF = false;
       gotDollar = false;
