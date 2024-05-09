@@ -29,6 +29,9 @@ EthernetUDP Eth_udpAutoSteer; // In & Out Port 8888
 
 IPAddress Eth_ipDestination;
 
+bool Autosteer_running = true; // Auto set off in autosteer setup
+bool Ethernet_running = false; // Auto set on in ethernet setup
+
 void EthernetStart();
 void udpNtrip();
 void ReceiveUdp();
@@ -166,4 +169,6 @@ void loop() {
       msgBufLen = 0;
     }
   }
+
+  udpNtrip();
 }
